@@ -62,7 +62,7 @@ def make_gift_template(gift_key, to, msg):
             f"Dear @{to},\n\n"
             f"❝ {msg} ❞\n\n"
             f"━━━━━━━━━━━━━━━━━\n"
-            f"[ 🍀 A GIFT FROM THE CORNER ]"
+            f"[ 🍀 A GIFT FROM SOMEONE IN THE CORNER ]"
         )
     elif gift_key == "appreciation":
         return (
@@ -71,7 +71,7 @@ def make_gift_template(gift_key, to, msg):
             f"Dear @{to},\n\n"
             f"❝ {msg} ❞\n\n"
             f"━━━━━━━━━━━━━━━━━\n"
-            f"[ 🍀 A GIFT FROM THE CORNER ]"
+            f"[ 🍀 A GIFT FROM SOMEONE IN THE CORNER ]"
         )
 
 # ─── TEXTS ────────────────────────────────────────────────
