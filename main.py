@@ -210,8 +210,8 @@ def settings_markup(user_id):
     lang_str = "🇮🇩 Indonesia" if lang == "id" else "🇬🇧 English"
     notif_str = t(user_id, "notif_active") if notif else t(user_id, "notif_inactive")
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton(f"🌐 {t(user_id, 'btn_lang')} — {lang_str}", callback_data="toggle_lang"))
-    markup.add(types.InlineKeyboardButton(f"🔔 {t(user_id, 'btn_notif')} — {notif_str}", callback_data="toggle_notif"))
+    markup.add(types.InlineKeyboardButton(f" {t(user_id, 'btn_lang')} — {lang_str}", callback_data="toggle_lang"))
+    markup.add(types.InlineKeyboardButton(f" {t(user_id, 'btn_notif')} — {notif_str}", callback_data="toggle_notif"))
     markup.add(types.InlineKeyboardButton(t(user_id, "btn_del_account"), callback_data="ask_del_account"))
     markup.add(types.InlineKeyboardButton(t(user_id, "btn_back"), callback_data="back_menu"))
     return markup
