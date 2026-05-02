@@ -865,7 +865,7 @@ def callback_handler(call):
         bot.answer_callback_query(call.id, msg, show_alert=True)
 
     elif data == "send_fess":
-        if not can_send(user_id):
+        if not check_can_send(user_id):
             bot.answer_callback_query(call.id, t(user_id, "quota"), show_alert=True)
             return
         pending_users.add(user_id)
@@ -893,10 +893,14 @@ def callback_handler(call):
         pd = preview_data.pop(user_id, None)
         pending_users.discard(user_id)
         if not pd:
-            bot.answer_callback_query(call.id)
-            return
+           bot.answer_callback_query(call.id)
+           return
+        first_today = is_first_fess_today(user_id)
+        if not use_quota(user_id):
+           bot.answer_callback_query(call.id, t(user_id, "quota"), show_alert=True)
+           return
         try:
-            prefix = get_prefix(user_id)
+           prefix = get_prefix(user_id)
             if pd["type"] == "text":
                 clean_text = strip_leading_emoji(pd["text"])
                 if pd.get("invisible"):
