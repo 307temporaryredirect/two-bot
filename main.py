@@ -35,7 +35,7 @@ total_fess_sent = 0
 # ─── TEXTS ────────────────────────────────────────────────
 TEXTS = {
     "id": {
-        "welcome": "Halo! Selamat datang di *MunCorner Bot* 💚\n\nPilih bahasa kamu:\n_Choose your language:_",
+        "welcome": "Halo! Selamat datang di *Muncorner Bot* 💚\n\nPilih bahasa kamu:\n_Choose your language:_",
         "menu": "Hai, *{name}*! 👋\n\nApa yang mau kamu lakukan hari ini?",
         "send_guide": "📝 *Panduan Kirim Menfess*\n\nKetik pesan kamu atau kirim foto dengan caption.\n\n_Maks. 4000 karakter · 5 menfess/hari_",
         "preview": "👀 *Preview menfess kamu:*\n\n💚 {text}\n\n_Sudah yakin? Menfess akan dikirim ke channel._",
@@ -86,7 +86,7 @@ TEXTS = {
         "no_username": "tidak ada username",
     },
     "en": {
-        "welcome": "Hello! Welcome to *MunCorner Bot* 💚\n\nChoose your language:\n_Pilih bahasa kamu:_",
+        "welcome": "Hello! Welcome to *Muncorner Bot* 💚\n\nChoose your language:\n_Pilih bahasa kamu:_",
         "menu": "Hey, *{name}*! 👋\n\nWhat would you like to do today?",
         "send_guide": "📝 *How to Send a Menfess*\n\nType your message or send a photo with caption.\n\n_Max. 4000 characters · 5 menfess/day_",
         "preview": "👀 *Preview your menfess:*\n\n💚 {text}\n\n_Are you sure? Your menfess will be sent to the channel._",
