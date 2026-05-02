@@ -245,25 +245,36 @@ def admin_panel(message):
         text += f"#{i+1} @{uname} — {count} fess\n"
     bot.send_message(ADMIN_ID, text, parse_mode="Markdown")
 
+broadcast_sent = {}  # {isi_pesan: set(user_ids)}
+
 @bot.message_handler(commands=['broadcast'])
 def broadcast(message):
     if message.from_user.id != ADMIN_ID:
         return
     text = message.text.replace('/broadcast', '').strip()
     if not text:
-        bot.reply_to(message, "❌ Tulis pesan setelah /broadcast\n\nContoh:\n/broadcast Halo Cornerpeeps! Ada update baru nih 💚")
+        bot.reply_to(message, "❌ Tulis pesan setelah /broadcast\n\nContoh:\n/broadcast Halo Cornerpeeps! 💚")
         return
-    
+
+    if text not in broadcast_sent:
+        broadcast_sent[text] = set()
+
     success = 0
     failed = 0
+    skipped = 0
+
     for user_id in list(user_first_seen.keys()):
+        if user_id in broadcast_sent[text]:
+            skipped += 1
+            continue
         try:
             bot.send_message(user_id, text, parse_mode="Markdown")
+            broadcast_sent[text].add(user_id)
             success += 1
         except:
             failed += 1
-    
-    bot.reply_to(message, f"✅ Broadcast selesai!\n\n📨 Terkirim: {success}\n❌ Gagal: {failed}")
+
+    bot.reply_to(message, f"✅ Broadcast selesai!\n\n📨 Terkirim: {success}\n⏭ Dilewati: {skipped}\n❌ Gagal: {failed}")
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
