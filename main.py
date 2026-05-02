@@ -582,7 +582,18 @@ def strip_leading_emoji(text):
     )
     return emoji_pattern.sub("", text).strip()
 
-def can_send(user_id):
+def check_can_send(user_id):
+    # Cek doang, tidak increment
+    today = datetime.now().date().isoformat()
+    user = get_user(user_id)
+    if not user:
+        return False
+    if user["fess_count_date"] != today:
+        return True
+    return user["fess_count"] < 5
+
+def use_quota(user_id):
+    # Increment quota, dipanggil pas benar-benar kirim
     today = datetime.now().date().isoformat()
     user = get_user(user_id)
     if not user:
@@ -595,19 +606,13 @@ def can_send(user_id):
         return True
     return False
 
-def quota_left(user_id):
-    today = datetime.now().date().isoformat()
-    user = get_user(user_id)
-    if not user or user["fess_count_date"] != today:
-        return 5
-    return max(0, 5 - user["fess_count"])
-
 def is_first_fess_today(user_id):
     today = datetime.now().date().isoformat()
     user = get_user(user_id)
     if not user:
         return True
-    return user["fess_count_date"] != today or user["fess_count"] == 1
+    # Cek sebelum quota dipakai
+    return user["fess_count_date"] != today or user["fess_count"] == 0
 
 banned_words = ['anjing', 'bangsat', 'kontol', 'tolol']
 
