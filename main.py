@@ -62,7 +62,7 @@ def make_gift_template(gift_key, to, msg):
             f"Dear @{to},\n\n"
             f"❝ {msg} ❞\n\n"
             f"━━━━━━━━━━━━━━━━━\n"
-            f"[ 🍀 MUNCORNER GIFT ]"
+            f"[ 🍀 A GIFT FROM THE CORNER ]"
         )
     elif gift_key == "appreciation":
         return (
@@ -71,7 +71,7 @@ def make_gift_template(gift_key, to, msg):
             f"Dear @{to},\n\n"
             f"❝ {msg} ❞\n\n"
             f"━━━━━━━━━━━━━━━━━\n"
-            f"[ 🍀 MUNCORNER GIFT ]"
+            f"[ 🍀 A GIFT FROM THE CORNER ]"
         )
 
 # ─── TEXTS ────────────────────────────────────────────────
@@ -155,6 +155,7 @@ TEXTS = {
         "prefix_select": "🎨 Pilih Prefix Heart Kamu:",
         "invisible_guide": "🖊 Ketik pesan invisible ink kamu:\n\n_Pesan akan tersembunyi di channel, harus di-tap untuk dibaca._",
         "no_edit_benefit": "❌ Badge kamu belum bisa edit menfess.",
+        "first_fess_bonus": "\n🌟 Bonus Menfess Pertama Hari Ini! +1 🍀",
     },
     "en": {
         "welcome": "Hello! Welcome to *Muncorner Bot* 💚\n\nChoose your language:\n_Pilih bahasa kamu:_",
@@ -235,6 +236,7 @@ TEXTS = {
         "prefix_select": "🎨 Choose Your Heart Prefix:",
         "invisible_guide": "🖊 Type your invisible ink message:\n\n_Message will be hidden in channel, must be tapped to read._",
         "no_edit_benefit": "❌ Your badge cannot edit menfess yet.",
+        "first_fess_bonus": "\n🌟 First Menfess Bonus Today! +1 🍀",
     }
 }
 
@@ -464,18 +466,18 @@ def scheduled_fess_worker():
                     user_last_messages[user_id].pop(0)
 
                 link = f"https://t.me/c/{str(CHANNEL_ID)[4:]}/{msg_sent.message_id}"
-                bot.send_message(user_id, f"⏰ Menfess terjadwal kamu berhasil terkirim! +3 🍀\n\n[Lihat Menfess]({link})", parse_mode="Markdown")
+                bot.send_message(user_id, f"⏰ Menfess Terjadwal Kamu Berhasil Terkirim! +3 🍀\n\n[Lihat Menfess]({link})", parse_mode="Markdown")
             except Exception as e:
                 print(f"Scheduled fess error: {e}")
         time.sleep(30)
 
-# ─── CHANNEL GUARD — Anti fake gift ───────────────────────
+# ─── CHANNEL GUARD ────────────────────────────────────────
 @bot.channel_post_handler(func=lambda message: True)
 def channel_guard(message):
     if message.chat.id != CHANNEL_ID:
         return
     text = message.text or message.caption or ""
-    if "[ 🍀 MUNCORNER GIFT ]" in text:
+    if "[ 🍀 A GIFT FROM THE CORNER ]" in text:
         if message.message_id not in valid_gift_ids:
             try:
                 bot.delete_message(CHANNEL_ID, message.message_id)
@@ -540,11 +542,11 @@ def add_clover_cmd(message):
                 pass
         if target_id:
             add_clover(target_id, amount)
-            bot.reply_to(message, f"✅ +{amount} 🍀 berhasil ditambahkan ke @{username}")
+            bot.reply_to(message, f"✅ +{amount} 🍀 Berhasil Ditambahkan Ke @{username}")
         else:
-            bot.reply_to(message, "❌ User tidak ditemukan.")
+            bot.reply_to(message, "❌ User Tidak Ditemukan.")
     except:
-        bot.reply_to(message, "❌ Format salah.")
+        bot.reply_to(message, "❌ Format Salah.")
 
 @bot.message_handler(commands=['broadcast'])
 def broadcast(message):
@@ -659,9 +661,10 @@ def callback_handler(call):
                 preview = f"[foto] {pd.get('caption', '')}"
 
             total_fess_sent += 1
+            first_today = is_first_fess_today(user_id)
             user_total_fess[user_id] = user_total_fess.get(user_id, 0) + 1
             add_clover(user_id, 2)
-            if is_first_fess_today(user_id):
+            if first_today:
                 add_clover(user_id, 1)
             update_peak(user_id)
 
@@ -673,9 +676,13 @@ def callback_handler(call):
                 user_last_messages[user_id].pop(0)
 
             link = f"https://t.me/c/{str(CHANNEL_ID)[4:]}/{msg_sent.message_id}"
+            sent_text = t(user_id, "sent").format(link=link)
+            if first_today:
+                sent_text += t(user_id, "first_fess_bonus")
+
             if user_notif.get(user_id, True):
                 bot.edit_message_text(
-                    t(user_id, "sent").format(link=link),
+                    sent_text,
                     call.message.chat.id, call.message.message_id,
                     parse_mode="Markdown", reply_markup=back_markup(user_id)
                 )
@@ -922,7 +929,7 @@ def callback_handler(call):
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton(t(user_id, "btn_cancel"), callback_data="cancel_send"))
         bot.edit_message_text(
-            "⏰ *Jadwal Menfess*\n\nKetik waktu pengiriman dalam format *HH:MM* (WIB)\n\nContoh: *23:00*",
+            "⏰ *Jadwal Menfess*\n\nKetik Waktu Pengiriman Dalam Format *HH:MM* (WIB)\n\nContoh: *23:00*",
             call.message.chat.id, call.message.message_id,
             parse_mode="Markdown", reply_markup=markup
         )
@@ -994,7 +1001,7 @@ def callback_handler(call):
             ))
         markup.add(types.InlineKeyboardButton(t(user_id, "btn_back"), callback_data="back_menu"))
         bot.edit_message_text(
-            f"🎁 *Kirim Hadiah*\n\n🍀 Clover Kamu: *{clover}*\n\nPilih jenis hadiah:",
+            f"🎁 *Kirim Hadiah*\n\n🍀 Clover Kamu: *{clover}*\n\nPilih Jenis Hadiah:",
             call.message.chat.id, call.message.message_id,
             parse_mode="Markdown", reply_markup=markup
         )
@@ -1024,12 +1031,9 @@ def callback_handler(call):
         pd = preview_data.get(user_id, {})
         is_anon = data == "gift_anon_send"
         gift_key = pd.get("gift_key")
-        gift = GIFT_PRICES[gift_key]
         to = pd.get("to", "someone")
         msg = pd.get("msg", "")
-        from_ = "💚 Anonim" if is_anon else f"@{call.from_user.username or 'someone'}"
         preview_text = make_gift_template(gift_key, to, msg)
-        pd["from_"] = from_
         pd["preview_text"] = preview_text
         pd["to_username"] = to
         markup = types.InlineKeyboardMarkup()
@@ -1061,10 +1065,7 @@ def callback_handler(call):
         try:
             msg_sent = bot.send_message(CHANNEL_ID, pd["preview_text"], parse_mode="Markdown")
             valid_gift_ids.add(msg_sent.message_id)
-
             link = f"https://t.me/c/{str(CHANNEL_ID)[4:]}/{msg_sent.message_id}"
-
-            # Notif ke penerima kalau sudah /start bot
             to_username = pd.get("to_username", "")
             for uid in user_first_seen.keys():
                 try:
@@ -1074,7 +1075,6 @@ def callback_handler(call):
                         break
                 except:
                     pass
-
             bot.edit_message_text(
                 t(user_id, "gift_sent").format(price=gift["price"]),
                 call.message.chat.id, call.message.message_id,
@@ -1146,7 +1146,7 @@ def handle_message(message):
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton(t(user_id, "btn_cancel"), callback_data="cancel_send"))
         bot.send_message(user_id,
-            f"⏰ Jadwal: *{time_str}* WIB\n\nSekarang ketik atau kirim foto menfess kamu:",
+            f"⏰ Jadwal: *{time_str}* WIB\n\nSekarang Ketik Atau Kirim Foto Menfess Kamu:",
             parse_mode="Markdown", reply_markup=markup)
         return
 
@@ -1174,7 +1174,7 @@ def handle_message(message):
         )
         preview_text = preview_data[user_id].get("text", f"[foto] {preview_data[user_id].get('caption', '')}")
         bot.send_message(user_id,
-            f"⏰ *Preview Menfess Terjadwal:*\n\n{get_prefix(user_id)}{preview_text}\n\n_Akan dikirim jam *{time_str}* WIB_",
+            f"⏰ *Preview Menfess Terjadwal:*\n\n{get_prefix(user_id)}{preview_text}\n\n_Akan Dikirim Jam *{time_str}* WIB_",
             parse_mode="Markdown", reply_markup=markup)
         return
 
@@ -1205,7 +1205,7 @@ def handle_message(message):
             types.InlineKeyboardButton(t(user_id, "btn_send_confirm"), callback_data="confirm_poll_send"),
             types.InlineKeyboardButton(t(user_id, "btn_cancel"), callback_data="cancel_send")
         )
-        bot.send_message(user_id, f"👀 *Preview Polling:*\n\n{preview_text}\n\nKirim ke channel?",
+        bot.send_message(user_id, f"👀 *Preview Polling:*\n\n{preview_text}\n\nKirim Ke Channel?",
                          parse_mode="Markdown", reply_markup=markup)
         return
 
