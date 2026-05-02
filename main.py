@@ -1546,6 +1546,26 @@ def handle_message(message):
 
 
 # ─── RUN ──────────────────────────────────────────────────
+def backup_worker():
+    while True:
+        now = datetime.now()
+        target = now.replace(hour=17, minute=0, second=0, microsecond=0)
+        if now > target:
+            target += timedelta(days=1)
+        wait_seconds = (target - now).total_seconds()
+        time.sleep(wait_seconds)
+        try:
+            with open(DB_PATH, 'rb') as f:
+                today = datetime.now().strftime("%d-%m-%Y")
+                bot.send_document(
+                    ADMIN_ID,
+                    f,
+                    visible_file_name=f"muncorner_backup_{today}.db",
+                    caption=f"🗄 Backup Otomatis\n📅 {today}"
+                )
+        except Exception as e:
+            print(f"Backup error: {e}")
+
 def run_web():
     print("WEB START")
     app.run(host="0.0.0.0", port=8080)
@@ -1559,4 +1579,5 @@ if __name__ == "__main__":
     init_db()
     threading.Thread(target=run_web, daemon=True).start()
     threading.Thread(target=scheduled_fess_worker, daemon=True).start()
+    threading.Thread(target=backup_worker, daemon=True).start()
     run_bot()
