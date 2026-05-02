@@ -30,13 +30,12 @@ user_first_seen = {}
 user_notif = {}
 pending_users = set()
 preview_data = {}
-pending_delete = {}
 total_fess_sent = 0
 
-# ─── HELPERS ──────────────────────────────────────────────
+# ─── TEXTS ────────────────────────────────────────────────
 TEXTS = {
     "id": {
-        "welcome": "Halo! Selamat datang di *Muncorner Bot* 💚\n\nPilih bahasa kamu:",
+        "welcome": "Halo! Selamat datang di *MunCorner Bot* 💚\n\nPilih bahasa kamu:\n_Choose your language:_",
         "menu": "Hai, *{name}*! 👋\n\nApa yang mau kamu lakukan hari ini?",
         "send_guide": "📝 *Panduan Kirim Menfess*\n\nKetik pesan kamu atau kirim foto dengan caption.\n\n_Maks. 4000 karakter · 5 menfess/hari_",
         "preview": "👀 *Preview menfess kamu:*\n\n💚 {text}\n\n_Sudah yakin? Menfess akan dikirim ke channel._",
@@ -50,14 +49,27 @@ TEXTS = {
         "confirm_delete": "⚠️ Yakin hapus *Fess #{num}*?\n\n_{preview}_\n\nPesan akan dihapus dari channel.",
         "deleted": "✅ Fess berhasil dihapus dari channel.",
         "delete_fail": "❌ Gagal hapus. Mungkin sudah terlalu lama.",
-        "stats_title": "📊 *Statistik Muncorner*",
+        "stats_title": "📊 *Statistik MunCorner*",
+        "stats_total": "📨 Total menfess",
+        "stats_senders": "👥 Total pengirim",
+        "rank_label": "🏆 Posisi kamu di leaderboard",
+        "you_label": "KAMU",
+        "you_pronoun": "kamu",
+        "leaderboard_empty": "_Kamu belum ada di leaderboard. Kirim menfess dulu!_",
         "profile_title": "👤 *Profil Saya*",
+        "profile_username": "👤 Username",
+        "profile_id": "🆔 ID",
+        "profile_joined": "📅 Bergabung",
+        "profile_total": "📨 Total menfess",
+        "profile_quota": "⏳ Kuota hari ini",
+        "profile_ranking": "🏆 Ranking",
+        "profile_badge": "🎖 Badge",
         "settings_title": "⚙️ *Pengaturan*",
-        "lang_changed": "✅ Bahasa diubah ke Bahasa Indonesia.",
-        "notif_on": "✅ Notifikasi konfirmasi *diaktifkan*.",
-        "notif_off": "🔕 Notifikasi konfirmasi *dinonaktifkan*.",
+        "notif_active": "✅ Aktif",
+        "notif_inactive": "🔕 Nonaktif",
         "delete_account": "⚠️ Yakin hapus semua data akun kamu?",
-        "account_deleted": "✅ Data akun berhasil dihapus.",
+        "account_deleted_msg": "✅ Data akun berhasil dihapus.",
+        "send_error": "❌ Gagal kirim. Error: {e}",
         "btn_send": "💚 Kirim Menfess",
         "btn_stats": "📊 Statistik",
         "btn_delete": "🗑 Hapus Menfess",
@@ -67,14 +79,14 @@ TEXTS = {
         "btn_send_confirm": "✅ Kirim",
         "btn_cancel": "✖ Batal",
         "btn_yes_delete": "🗑 Ya, Hapus",
+        "btn_yes_del_account": "🗑 Ya, Hapus",
         "btn_lang": "🌐 Bahasa",
-        "btn_notif": "🔔 Notifikasi Konfirmasi",
+        "btn_notif": "🔔 Notifikasi",
         "btn_del_account": "🗑 Hapus Data Akun",
-        "rank_label": "🏆 Posisi kamu di leaderboard",
-        "no_username": "_tidak ada username_",
+        "no_username": "tidak ada username",
     },
     "en": {
-        "welcome": "Hello! Welcome to *Muncorner Bot* 💚\n\nChoose your language:",
+        "welcome": "Hello! Welcome to *MunCorner Bot* 💚\n\nChoose your language:\n_Pilih bahasa kamu:_",
         "menu": "Hey, *{name}*! 👋\n\nWhat would you like to do today?",
         "send_guide": "📝 *How to Send a Menfess*\n\nType your message or send a photo with caption.\n\n_Max. 4000 characters · 5 menfess/day_",
         "preview": "👀 *Preview your menfess:*\n\n💚 {text}\n\n_Are you sure? Your menfess will be sent to the channel._",
@@ -89,13 +101,26 @@ TEXTS = {
         "deleted": "✅ Menfess successfully deleted from channel.",
         "delete_fail": "❌ Failed to delete. It may have been too long ago.",
         "stats_title": "📊 *MunCorner Statistics*",
+        "stats_total": "📨 Total menfess",
+        "stats_senders": "👥 Total senders",
+        "rank_label": "🏆 Your leaderboard position",
+        "you_label": "YOU",
+        "you_pronoun": "you",
+        "leaderboard_empty": "_You're not on the leaderboard yet. Send a menfess first!_",
         "profile_title": "👤 *My Profile*",
+        "profile_username": "👤 Username",
+        "profile_id": "🆔 ID",
+        "profile_joined": "📅 Joined",
+        "profile_total": "📨 Total menfess",
+        "profile_quota": "⏳ Today's quota",
+        "profile_ranking": "🏆 Ranking",
+        "profile_badge": "🎖 Badge",
         "settings_title": "⚙️ *Settings*",
-        "lang_changed": "✅ Language changed to English.",
-        "notif_on": "✅ Confirmation notifications *enabled*.",
-        "notif_off": "🔕 Confirmation notifications *disabled*.",
+        "notif_active": "✅ Active",
+        "notif_inactive": "🔕 Inactive",
         "delete_account": "⚠️ Are you sure you want to delete all your account data?",
-        "account_deleted": "✅ Account data successfully deleted.",
+        "account_deleted_msg": "✅ Account data successfully deleted.",
+        "send_error": "❌ Failed to send. Error: {e}",
         "btn_send": "💚 Send Menfess",
         "btn_stats": "📊 Statistics",
         "btn_delete": "🗑 Delete Menfess",
@@ -105,11 +130,11 @@ TEXTS = {
         "btn_send_confirm": "✅ Send",
         "btn_cancel": "✖ Cancel",
         "btn_yes_delete": "🗑 Yes, Delete",
+        "btn_yes_del_account": "🗑 Yes, Delete",
         "btn_lang": "🌐 Language",
-        "btn_notif": "🔔 Confirmation Notification",
+        "btn_notif": "🔔 Notification",
         "btn_del_account": "🗑 Delete Account Data",
-        "rank_label": "🏆 Your leaderboard position",
-        "no_username": "_no username_",
+        "no_username": "no username",
     }
 }
 
@@ -126,12 +151,10 @@ def sensor_username(username):
     return "".join(c if i in visible else "*" for i, c in enumerate(chars))
 
 def get_leaderboard():
-    sorted_users = sorted(user_total_fess.items(), key=lambda x: x[1], reverse=True)
-    return sorted_users
+    return sorted(user_total_fess.items(), key=lambda x: x[1], reverse=True)
 
 def get_rank(user_id):
-    lb = get_leaderboard()
-    for i, (uid, _) in enumerate(lb):
+    for i, (uid, _) in enumerate(get_leaderboard()):
         if uid == user_id:
             return i + 1
     return None
@@ -164,22 +187,32 @@ def contains_bad_words(text):
     return any(word in text.lower() for word in banned_words)
 
 def main_menu_markup(user_id):
-    lang = user_lang.get(user_id, "id")
-    tx = TEXTS[lang]
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton(tx["btn_send"], callback_data="send_fess"))
+    markup.add(types.InlineKeyboardButton(t(user_id, "btn_send"), callback_data="send_fess"))
     markup.row(
-        types.InlineKeyboardButton(tx["btn_stats"], callback_data="show_stats"),
-        types.InlineKeyboardButton(tx["btn_delete"], callback_data="delete_fess")
+        types.InlineKeyboardButton(t(user_id, "btn_stats"), callback_data="show_stats"),
+        types.InlineKeyboardButton(t(user_id, "btn_delete"), callback_data="delete_fess")
     )
     markup.row(
-        types.InlineKeyboardButton(tx["btn_profile"], callback_data="my_profile"),
-        types.InlineKeyboardButton(tx["btn_settings"], callback_data="settings")
+        types.InlineKeyboardButton(t(user_id, "btn_profile"), callback_data="my_profile"),
+        types.InlineKeyboardButton(t(user_id, "btn_settings"), callback_data="settings")
     )
     return markup
 
 def back_markup(user_id):
     markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton(t(user_id, "btn_back"), callback_data="back_menu"))
+    return markup
+
+def settings_markup(user_id):
+    lang = user_lang.get(user_id, "id")
+    notif = user_notif.get(user_id, True)
+    lang_str = "🇮🇩 Indonesia" if lang == "id" else "🇬🇧 English"
+    notif_str = t(user_id, "notif_active") if notif else t(user_id, "notif_inactive")
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton(f"🌐 {t(user_id, 'btn_lang')} — {lang_str}", callback_data="toggle_lang"))
+    markup.add(types.InlineKeyboardButton(f"🔔 {t(user_id, 'btn_notif')} — {notif_str}", callback_data="toggle_notif"))
+    markup.add(types.InlineKeyboardButton(t(user_id, "btn_del_account"), callback_data="ask_del_account"))
     markup.add(types.InlineKeyboardButton(t(user_id, "btn_back"), callback_data="back_menu"))
     return markup
 
@@ -193,7 +226,7 @@ def start(message):
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("🇮🇩 Bahasa Indonesia", callback_data="lang_id"))
         markup.add(types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"))
-        bot.send_message(user_id, "Halo! Selamat datang di *MunCorner Bot* 💚\n\nPilih bahasa kamu:\n_Choose your language:_", parse_mode="Markdown", reply_markup=markup)
+        bot.send_message(user_id, TEXTS["id"]["welcome"], parse_mode="Markdown", reply_markup=markup)
     else:
         name = message.from_user.first_name or "Cornerpeeps"
         bot.send_message(user_id, t(user_id, "menu").format(name=name), parse_mode="Markdown", reply_markup=main_menu_markup(user_id))
@@ -205,7 +238,10 @@ def admin_panel(message):
     lb = get_leaderboard()
     text = "👑 *Admin Leaderboard*\n\n"
     for i, (uid, count) in enumerate(lb[:20]):
-        uname = bot.get_chat(uid).username or f"id:{uid}"
+        try:
+            uname = bot.get_chat(uid).username or f"id:{uid}"
+        except:
+            uname = f"id:{uid}"
         text += f"#{i+1} @{uname} — {count} fess\n"
     bot.send_message(ADMIN_ID, text, parse_mode="Markdown")
 
@@ -303,7 +339,7 @@ def callback_handler(call):
 
         except Exception as e:
             bot.edit_message_text(
-                f"❌ Gagal kirim. Error: {e}",
+                t(user_id, "send_error").format(e=e),
                 call.message.chat.id, call.message.message_id,
                 reply_markup=back_markup(user_id)
             )
@@ -312,12 +348,11 @@ def callback_handler(call):
     elif data == "show_stats":
         rank = get_rank(user_id)
         lb = get_leaderboard()
-        my_fess = user_total_fess.get(user_id, 0)
         total_senders = len(user_total_fess)
 
         text = t(user_id, "stats_title") + "\n\n"
-        text += f"📨 Total menfess: *{total_fess_sent}*\n"
-        text += f"👥 Total pengirim: *{total_senders}*\n\n"
+        text += f"{t(user_id, 'stats_total')}: *{total_fess_sent}*\n"
+        text += f"{t(user_id, 'stats_senders')}: *{total_senders}*\n\n"
 
         if rank:
             text += t(user_id, "rank_label") + f": *#{rank}*\n\n"
@@ -328,14 +363,14 @@ def callback_handler(call):
                 uid, count = lb[i]
                 pos = i + 1
                 if uid == user_id:
-                    uname = call.from_user.username or "kamu"
-                    text += f"#{pos} @{uname} ← KAMU ({count})\n"
+                    uname = call.from_user.username or t(user_id, "you_pronoun")
+                    text += f"#{pos} @{uname} ← {t(user_id, 'you_label')} ({count})\n"
                 else:
                     uname = sensor_username(str(pos) + "user")
                     text += f"#{pos} @{uname} ({count})\n"
             text += "```"
         else:
-            text += "_Kamu belum ada di leaderboard. Kirim menfess dulu!_"
+            text += t(user_id, "leaderboard_empty")
 
         bot.edit_message_text(text, call.message.chat.id, call.message.message_id,
                               parse_mode="Markdown", reply_markup=back_markup(user_id))
@@ -416,73 +451,46 @@ def callback_handler(call):
             badge = "🌱 Newbie"
 
         text = t(user_id, "profile_title") + "\n\n"
-        text += f"👤 Username: *@{uname}*\n"
-        text += f"🆔 ID: `{user_id}`\n"
-        text += f"📅 Bergabung: *{first_seen}*\n"
-        text += f"📨 Total menfess: *{total}*\n"
-        text += f"⏳ Kuota hari ini: *{quota}/5*\n"
-        text += f"🏆 Ranking: *{rank_str}*\n"
-        text += f"🎖 Badge: {badge}"
+        text += f"{t(user_id, 'profile_username')}: *@{uname}*\n"
+        text += f"{t(user_id, 'profile_id')}: `{user_id}`\n"
+        text += f"{t(user_id, 'profile_joined')}: *{first_seen}*\n"
+        text += f"{t(user_id, 'profile_total')}: *{total}*\n"
+        text += f"{t(user_id, 'profile_quota')}: *{quota}/5*\n"
+        text += f"{t(user_id, 'profile_ranking')}: *{rank_str}*\n"
+        text += f"{t(user_id, 'profile_badge')}: {badge}"
 
         bot.edit_message_text(text, call.message.chat.id, call.message.message_id,
                               parse_mode="Markdown", reply_markup=back_markup(user_id))
 
     # ── Settings
     elif data == "settings":
-        lang = user_lang.get(user_id, "id")
-        notif = user_notif.get(user_id, True)
-        lang_str = "🇮🇩 Indonesia" if lang == "id" else "🇬🇧 English"
-        notif_str = "✅ Aktif" if notif else "🔕 Nonaktif"
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton(f"🌐 Bahasa — {lang_str}", callback_data="toggle_lang"))
-        markup.add(types.InlineKeyboardButton(f"🔔 Notifikasi — {notif_str}", callback_data="toggle_notif"))
-        markup.add(types.InlineKeyboardButton(t(user_id, "btn_del_account"), callback_data="ask_del_account"))
-        markup.add(types.InlineKeyboardButton(t(user_id, "btn_back"), callback_data="back_menu"))
         bot.edit_message_text(
             t(user_id, "settings_title"),
             call.message.chat.id, call.message.message_id,
-            parse_mode="Markdown", reply_markup=markup
+            parse_mode="Markdown", reply_markup=settings_markup(user_id)
         )
 
     elif data == "toggle_lang":
         current = user_lang.get(user_id, "id")
         user_lang[user_id] = "en" if current == "id" else "id"
-        lang = user_lang[user_id]
-        notif = user_notif.get(user_id, True)
-        lang_str = "🇮🇩 Indonesia" if lang == "id" else "🇬🇧 English"
-        notif_str = "✅ Aktif" if notif else "🔕 Nonaktif"
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton(f"🌐 Bahasa — {lang_str}", callback_data="toggle_lang"))
-        markup.add(types.InlineKeyboardButton(f"🔔 Notifikasi — {notif_str}", callback_data="toggle_notif"))
-        markup.add(types.InlineKeyboardButton(t(user_id, "btn_del_account"), callback_data="ask_del_account"))
-        markup.add(types.InlineKeyboardButton(t(user_id, "btn_back"), callback_data="back_menu"))
         bot.edit_message_text(
             t(user_id, "settings_title"),
             call.message.chat.id, call.message.message_id,
-            parse_mode="Markdown", reply_markup=markup
+            parse_mode="Markdown", reply_markup=settings_markup(user_id)
         )
 
     elif data == "toggle_notif":
         user_notif[user_id] = not user_notif.get(user_id, True)
-        notif = user_notif[user_id]
-        lang = user_lang.get(user_id, "id")
-        lang_str = "🇮🇩 Indonesia" if lang == "id" else "🇬🇧 English"
-        notif_str = "✅ Aktif" if notif else "🔕 Nonaktif"
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton(f"🌐 Bahasa — {lang_str}", callback_data="toggle_lang"))
-        markup.add(types.InlineKeyboardButton(f"🔔 Notifikasi — {notif_str}", callback_data="toggle_notif"))
-        markup.add(types.InlineKeyboardButton(t(user_id, "btn_del_account"), callback_data="ask_del_account"))
-        markup.add(types.InlineKeyboardButton(t(user_id, "btn_back"), callback_data="back_menu"))
         bot.edit_message_text(
             t(user_id, "settings_title"),
             call.message.chat.id, call.message.message_id,
-            parse_mode="Markdown", reply_markup=markup
+            parse_mode="Markdown", reply_markup=settings_markup(user_id)
         )
 
     elif data == "ask_del_account":
         markup = types.InlineKeyboardMarkup()
         markup.row(
-            types.InlineKeyboardButton("🗑 Ya, Hapus", callback_data="confirm_del_account"),
+            types.InlineKeyboardButton(t(user_id, "btn_yes_del_account"), callback_data="confirm_del_account"),
             types.InlineKeyboardButton(t(user_id, "btn_cancel"), callback_data="settings")
         )
         bot.edit_message_text(
@@ -500,7 +508,10 @@ def callback_handler(call):
         user_notif.pop(user_id, None)
         pending_users.discard(user_id)
         preview_data.pop(user_id, None)
-        bot.edit_message_text("✅ Data akun berhasil dihapus.", call.message.chat.id, call.message.message_id)
+        bot.edit_message_text(
+            t(user_id, "account_deleted_msg"),
+            call.message.chat.id, call.message.message_id
+        )
 
     bot.answer_callback_query(call.id)
 
