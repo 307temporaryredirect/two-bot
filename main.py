@@ -89,11 +89,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
 def get_global_stat(key):
     conn = get_db()
     c = conn.cursor()
@@ -305,8 +300,7 @@ TEXTS = {
         "welcome_bonus": "\n\n🍀 *+10 Clover* sebagai welcome bonus!",
         "menu": "Hai, *{name}*! 👋\n\nApa yang mau kamu lakukan hari ini?",
         "send_guide": "📝 *Panduan Kirim Menfess*\n\nKamu bisa langsung ketik isi menfess yang mau kamu kirim sekarang tanpa trigger apapun (bisa teks aja atau gambar dengan teks), lalu kirim.\n\n_Maks. 4000 karakter · 5 menfess/hari_",
-        "preview": "👀 *Preview Menfess Kamu:*\n\n{badge}💚 {text}\n\n_Sudah yakin? Menfess akan dikirim ke channel._",
-        "preview_hidden": "👀 *Preview Menfess Kamu:*\n\n💚 {text}\n\n_Sudah yakin? Menfess akan dikirim ke channel._",
+        "preview": "👀 *Preview Menfess Kamu:*\n\n{prefix}{text}\n\n_Sudah yakin? Menfess akan dikirim ke channel._",
         "sent": "✅ Menfess kamu berhasil terkirim! +2 🍀\n\n[Lihat Menfess]({link})",
         "quota": "❌ Kamu sudah mencapai batas *5 menfess* hari ini. Coba lagi besok ya!",
         "too_long": "❌ Pesan terlalu panjang! Maksimal 4000 karakter.",
@@ -389,7 +383,7 @@ TEXTS = {
         "prefix_select": "🎨 Pilih Prefix Heart Kamu:",
         "prefix_changed": "✅ Prefix Diubah Ke {prefix}",
         "invisible_guide": "🖊 Ketik pesan invisible ink kamu:\n\n_Pesan akan tersembunyi di channel, harus di-tap untuk dibaca._",
-        "invisible_preview": "🖊 *Preview Invisible Ink:*\n\n{badge}{prefix} ||{text}||\n\n_Pesan Akan Tersembunyi Di Channel._",
+        "invisible_preview": "🖊 *Preview Invisible Ink:*\n\n{prefix}<tg-spoiler>{text}</tg-spoiler>\n\n_Pesan Akan Tersembunyi Di Channel._",
         "first_fess_bonus": "\n🌟 Bonus Menfess Pertama Hari Ini! +1 🍀",
         "badge_benefit_title": "🎖 *Badge Benefit*\n\n{badge}\n\nPilih fitur yang mau digunakan:",
         "badge_benefit_locked": "🐣 *Badge Benefit*\n\n{badge}\n\nKamu belum punya benefit khusus.\nNaik rank untuk unlock fitur!",
@@ -405,8 +399,7 @@ TEXTS = {
         "welcome_bonus": "\n\n🍀 *+10 Clover* as a welcome bonus!",
         "menu": "Hey, *{name}*! 👋\n\nWhat would you like to do today?",
         "send_guide": "📝 *How to Send a Menfess*\n\nYou can now directly type the message you want to send without any trigger (it can be just text or an image with text), then send it.\n\n_Max. 4000 characters · 5 menfess/day_",
-        "preview": "👀 *Preview Your Menfess:*\n\n{badge}💚 {text}\n\n_Are you sure? Your menfess will be sent to the channel._",
-        "preview_hidden": "👀 *Preview Your Menfess:*\n\n💚 {text}\n\n_Are you sure? Your menfess will be sent to the channel._",
+        "preview": "👀 *Preview Your Menfess:*\n\n{prefix}{text}\n\n_Are you sure? Your menfess will be sent to the channel._",
         "sent": "✅ Your menfess has been sent! +2 🍀\n\n[View Menfess]({link})",
         "quota": "❌ You've reached the *5 menfess* limit for today. Try again tomorrow!",
         "too_long": "❌ Message too long! Maximum 4000 characters.",
@@ -489,7 +482,7 @@ TEXTS = {
         "prefix_select": "🎨 Choose Your Heart Prefix:",
         "prefix_changed": "✅ Prefix Changed To {prefix}",
         "invisible_guide": "🖊 Type your invisible ink message:\n\n_Message will be hidden in channel, must be tapped to read._",
-        "invisible_preview": "🖊 *Invisible Ink Preview:*\n\n{badge}{prefix} ||{text}||\n\n_Message Will Be Hidden In Channel._",
+        "invisible_preview": "🖊 *Invisible Ink Preview:*\n\n{prefix}<tg-spoiler>{text}</tg-spoiler>\n\n_Message Will Be Hidden In Channel._",
         "first_fess_bonus": "\n🌟 First Menfess Bonus Today! +1 🍀",
         "badge_benefit_title": "🎖 *Badge Benefit*\n\n{badge}\n\nChoose a feature to use:",
         "badge_benefit_locked": "🐣 *Badge Benefit*\n\n{badge}\n\nYou don't have any special benefits yet.\nRank up to unlock features!",
@@ -583,7 +576,6 @@ def strip_leading_emoji(text):
     return emoji_pattern.sub("", text).strip()
 
 def check_can_send(user_id):
-    # Cek doang, tidak increment
     today = datetime.now().date().isoformat()
     user = get_user(user_id)
     if not user:
@@ -593,7 +585,6 @@ def check_can_send(user_id):
     return user["fess_count"] < 5
 
 def use_quota(user_id):
-    # Increment quota, dipanggil pas benar-benar kirim
     today = datetime.now().date().isoformat()
     user = get_user(user_id)
     if not user:
@@ -611,8 +602,14 @@ def is_first_fess_today(user_id):
     user = get_user(user_id)
     if not user:
         return True
-    # Cek sebelum quota dipakai
     return user["fess_count_date"] != today or user["fess_count"] == 0
+
+def quota_left(user_id):
+    today = datetime.now().date().isoformat()
+    user = get_user(user_id)
+    if not user or user["fess_count_date"] != today:
+        return 5
+    return max(0, 5 - user["fess_count"])
 
 banned_words = ['anjing', 'bangsat', 'kontol', 'tolol']
 
@@ -657,8 +654,8 @@ def settings_markup(user_id):
     lang_str = "🇮🇩 Indonesia" if lang == "id" else "🇬🇧 English"
     notif_str = t(user_id, "notif_active") if notif else t(user_id, "notif_inactive")
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton(f" {t(user_id, 'btn_lang')} — {lang_str}", callback_data="toggle_lang"))
-    markup.add(types.InlineKeyboardButton(f" {t(user_id, 'btn_notif')} — {notif_str}", callback_data="toggle_notif"))
+    markup.add(types.InlineKeyboardButton(f"🌐 {t(user_id, 'btn_lang')} — {lang_str}", callback_data="toggle_lang"))
+    markup.add(types.InlineKeyboardButton(f"🔔 {t(user_id, 'btn_notif')} — {notif_str}", callback_data="toggle_notif"))
     markup.add(types.InlineKeyboardButton(t(user_id, "btn_del_account"), callback_data="ask_del_account"))
     markup.add(types.InlineKeyboardButton(t(user_id, "btn_back"), callback_data="back_menu"))
     return markup
@@ -666,20 +663,18 @@ def settings_markup(user_id):
 def badge_benefit_markup(user_id):
     level = get_badge_level(user_id)
     user = get_user(user_id)
+    lang = user["lang"] if user else "id"
     markup = types.InlineKeyboardMarkup()
     if level == 0:
         markup.add(types.InlineKeyboardButton(t(user_id, "btn_back"), callback_data="back_menu"))
         return markup
-    markup.add(types.InlineKeyboardButton("✏️ Edit Menfess", callback_data="edit_fess"))
-    markup.add(types.InlineKeyboardButton("📊 Kirim Polling" if get_user(user_id)["lang"] == "id" else "📊 Send Poll", callback_data="send_poll"))
+    markup.add(types.InlineKeyboardButton("✏️ Edit Menfess" if lang == "id" else "✏️ Edit Menfess", callback_data="edit_fess"))
+    markup.add(types.InlineKeyboardButton("📊 Kirim Polling" if lang == "id" else "📊 Send Poll", callback_data="send_poll"))
     if level >= 2:
-        markup.add(types.InlineKeyboardButton("⏰ Jadwal Menfess" if get_user(user_id)["lang"] == "id" else "⏰ Schedule Menfess", callback_data="schedule_fess"))
+        markup.add(types.InlineKeyboardButton("⏰ Jadwal Menfess" if lang == "id" else "⏰ Schedule Menfess", callback_data="schedule_fess"))
     if level >= 3:
         hide = user["hide_badge"] if user else 0
-        if get_user(user_id)["lang"] == "id":
-            hide_status = "👁 Tampilkan Badge" if hide else "👻 Sembunyikan Badge"
-        else:
-            hide_status = "👁 Show Badge" if hide else "👻 Hide Badge"
+        hide_status = ("👁 Tampilkan Badge" if hide else "👻 Sembunyikan Badge") if lang == "id" else ("👁 Show Badge" if hide else "👻 Hide Badge")
         markup.add(types.InlineKeyboardButton(hide_status, callback_data="toggle_hide_badge"))
     if level >= 4:
         markup.add(types.InlineKeyboardButton("🎨 Custom Prefix", callback_data="custom_prefix"))
@@ -893,18 +888,17 @@ def callback_handler(call):
         pd = preview_data.pop(user_id, None)
         pending_users.discard(user_id)
         if not pd:
-           bot.answer_callback_query(call.id)
-           return
+            bot.answer_callback_query(call.id)
+            return
         first_today = is_first_fess_today(user_id)
         if not use_quota(user_id):
-           bot.answer_callback_query(call.id, t(user_id, "quota"), show_alert=True)
-           return
+            bot.answer_callback_query(call.id, t(user_id, "quota"), show_alert=True)
+            return
         try:
-           prefix = get_prefix(user_id)
+            prefix = get_prefix(user_id)
             if pd["type"] == "text":
                 clean_text = strip_leading_emoji(pd["text"])
                 if pd.get("invisible"):
-                    # Fix invisible ink — kirim sebagai HTML spoiler
                     final_text = prefix + f"<tg-spoiler>{clean_text}</tg-spoiler>"
                     msg_sent = bot.send_message(CHANNEL_ID, final_text, parse_mode="HTML")
                 else:
@@ -915,7 +909,6 @@ def callback_handler(call):
                 msg_sent = bot.send_photo(CHANNEL_ID, pd["file_id"], caption=prefix + clean_caption)
                 preview = f"[foto] {pd.get('caption', '')}"
 
-            first_today = is_first_fess_today(user_id)
             increment_global_stat("total_fess_sent")
             user = get_user(user_id)
             update_user(user_id, total_fess=(user["total_fess"] or 0) + 1)
@@ -1333,7 +1326,6 @@ def handle_message(message):
     pd = preview_data.get(user_id, {})
     mode = pd.get("mode", "normal")
 
-    # ── Edit mode
     if mode == "edit":
         if message.content_type != 'text':
             return
@@ -1357,7 +1349,6 @@ def handle_message(message):
         edit_pending.pop(user_id, None)
         return
 
-    # ── Schedule mode — input time
     if mode == "schedule":
         if message.content_type != 'text':
             return
@@ -1374,7 +1365,6 @@ def handle_message(message):
                          parse_mode="Markdown", reply_markup=markup)
         return
 
-    # ── Schedule mode — input content
     if mode == "schedule_content":
         time_str = pd.get("time_str")
         if message.content_type == 'text':
@@ -1405,7 +1395,6 @@ def handle_message(message):
                          parse_mode="Markdown", reply_markup=markup)
         return
 
-    # ── Poll mode — question
     if mode == "poll_question":
         if message.content_type != 'text':
             return
@@ -1415,7 +1404,6 @@ def handle_message(message):
         bot.send_message(user_id, t(user_id, "poll_options"), parse_mode="Markdown", reply_markup=markup)
         return
 
-    # ── Poll mode — options
     if mode == "poll_options":
         if message.content_type != 'text':
             return
@@ -1438,7 +1426,6 @@ def handle_message(message):
                          parse_mode="Markdown", reply_markup=markup)
         return
 
-    # ── Gift mode — username
     if mode == "gift" and pd.get("step") == "username":
         if message.content_type != 'text':
             return
@@ -1454,7 +1441,6 @@ def handle_message(message):
                          parse_mode="Markdown", reply_markup=markup)
         return
 
-    # ── Gift mode — message (langsung preview, skip pilihan anonim)
     if mode == "gift" and pd.get("step") == "message":
         if message.content_type != 'text':
             return
@@ -1479,7 +1465,6 @@ def handle_message(message):
                          parse_mode="Markdown", reply_markup=markup)
         return
 
-    # ── Invisible ink mode
     if mode == "invisible":
         if message.content_type != 'text':
             return
@@ -1487,18 +1472,17 @@ def handle_message(message):
         if contains_bad_words(text):
             bot.reply_to(message, t(user_id, "bad_word"))
             return
-        user = get_user(user_id)
-        badge = get_badge_emoji(user_id)
-        prefix = user["prefix"] if user and get_badge_level(user_id) == 4 else "💚"
+        prefix = get_prefix(user_id)
         preview_data[user_id] = {"type": "text", "text": text, "invisible": True, "mode": "invisible"}
         markup = types.InlineKeyboardMarkup()
         markup.row(
             types.InlineKeyboardButton(t(user_id, "btn_send_confirm"), callback_data="confirm_send"),
             types.InlineKeyboardButton(t(user_id, "btn_cancel"), callback_data="cancel_send")
         )
+        # Preview pakai HTML
         bot.send_message(user_id,
-                         t(user_id, "invisible_preview").format(badge=badge, prefix=prefix, text=text),
-                         parse_mode="Markdown", reply_markup=markup)
+                         t(user_id, "invisible_preview").format(prefix=prefix, text=text),
+                         parse_mode="HTML", reply_markup=markup)
         return
 
     # ── Normal mode
@@ -1511,15 +1495,9 @@ def handle_message(message):
             bot.reply_to(message, t(user_id, "bad_word"))
             return
         preview_data[user_id] = {"type": "text", "text": text, "mode": "normal"}
-        badge = get_badge_emoji(user_id)
-        user = get_user(user_id)
-        hide = user["hide_badge"] if user else 0
-        if hide:
-            preview_text = t(user_id, "preview_hidden").format(
-                text=text[:200] + ("..." if len(text) > 200 else ""))
-        else:
-            preview_text = t(user_id, "preview").format(
-                badge=badge, text=text[:200] + ("..." if len(text) > 200 else ""))
+        prefix = get_prefix(user_id)
+        preview_text = t(user_id, "preview").format(
+            prefix=prefix, text=text[:200] + ("..." if len(text) > 200 else ""))
 
     elif message.content_type == 'photo':
         file_id = message.photo[-1].file_id
@@ -1531,15 +1509,9 @@ def handle_message(message):
             bot.reply_to(message, t(user_id, "bad_word"))
             return
         preview_data[user_id] = {"type": "photo", "file_id": file_id, "caption": caption, "mode": "normal"}
-        badge = get_badge_emoji(user_id)
-        user = get_user(user_id)
-        hide = user["hide_badge"] if user else 0
-        if hide:
-            preview_text = t(user_id, "preview_hidden").format(
-                text=f"[foto] {caption}" if caption else "[foto]")
-        else:
-            preview_text = t(user_id, "preview").format(
-                badge=badge, text=f"[foto] {caption}" if caption else "[foto]")
+        prefix = get_prefix(user_id)
+        preview_text = t(user_id, "preview").format(
+            prefix=prefix, text=f"[foto] {caption}" if caption else "[foto]")
     else:
         return
 
