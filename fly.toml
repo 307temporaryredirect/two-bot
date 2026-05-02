@@ -6,6 +6,10 @@ primary_region = "ams"
 [processes]
 app = "python main.py"
 
+[mounts]
+source = "muncorner_data"
+destination = "/data"
+
 [http_service]
 internal_port = 8080
 force_https = true
