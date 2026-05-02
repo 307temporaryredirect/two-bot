@@ -741,13 +741,10 @@ def start(message):
     if is_new:
         update_user(user_id, ever_registered=1)
         add_clover_db(user_id, 10)
-    if not user["lang"] or user["lang"] == "id" and not user["ever_registered"]:
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("🇮🇩 Bahasa Indonesia", callback_data="lang_id"))
         markup.add(types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"))
-        welcome_text = TEXTS["id"]["welcome"]
-        if is_new:
-            welcome_text += TEXTS["id"]["welcome_bonus"]
+        welcome_text = TEXTS["id"]["welcome"] + TEXTS["id"]["welcome_bonus"]
         bot.send_message(user_id, welcome_text, parse_mode="Markdown", reply_markup=markup)
     else:
         name = message.from_user.first_name or "Cornerpeeps"
