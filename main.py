@@ -19,7 +19,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "MunCorner Bot is running 💚"
+    return "Muncorner Bot is running 💚"
 
 # ─── DATA STORE ───────────────────────────────────────────
 user_lang = {}
@@ -36,7 +36,7 @@ total_fess_sent = 0
 # ─── HELPERS ──────────────────────────────────────────────
 TEXTS = {
     "id": {
-        "welcome": "Halo! Selamat datang di *MunCorner Bot* 💚\n\nPilih bahasa kamu:",
+        "welcome": "Halo! Selamat datang di *Muncorner Bot* 💚\n\nPilih bahasa kamu:",
         "menu": "Hai, *{name}*! 👋\n\nApa yang mau kamu lakukan hari ini?",
         "send_guide": "📝 *Panduan Kirim Menfess*\n\nKetik pesan kamu atau kirim foto dengan caption.\n\n_Maks. 4000 karakter · 5 menfess/hari_",
         "preview": "👀 *Preview menfess kamu:*\n\n💚 {text}\n\n_Sudah yakin? Menfess akan dikirim ke channel._",
@@ -50,7 +50,7 @@ TEXTS = {
         "confirm_delete": "⚠️ Yakin hapus *Fess #{num}*?\n\n_{preview}_\n\nPesan akan dihapus dari channel.",
         "deleted": "✅ Fess berhasil dihapus dari channel.",
         "delete_fail": "❌ Gagal hapus. Mungkin sudah terlalu lama.",
-        "stats_title": "📊 *Statistik MunCorner*",
+        "stats_title": "📊 *Statistik Muncorner*",
         "profile_title": "👤 *Profil Saya*",
         "settings_title": "⚙️ *Pengaturan*",
         "lang_changed": "✅ Bahasa diubah ke Bahasa Indonesia.",
@@ -74,7 +74,7 @@ TEXTS = {
         "no_username": "_tidak ada username_",
     },
     "en": {
-        "welcome": "Hello! Welcome to *MunCorner Bot* 💚\n\nChoose your language:",
+        "welcome": "Hello! Welcome to *Muncorner Bot* 💚\n\nChoose your language:",
         "menu": "Hey, *{name}*! 👋\n\nWhat would you like to do today?",
         "send_guide": "📝 *How to Send a Menfess*\n\nType your message or send a photo with caption.\n\n_Max. 4000 characters · 5 menfess/day_",
         "preview": "👀 *Preview your menfess:*\n\n💚 {text}\n\n_Are you sure? Your menfess will be sent to the channel._",
