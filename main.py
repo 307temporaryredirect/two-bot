@@ -245,6 +245,26 @@ def admin_panel(message):
         text += f"#{i+1} @{uname} — {count} fess\n"
     bot.send_message(ADMIN_ID, text, parse_mode="Markdown")
 
+@bot.message_handler(commands=['broadcast'])
+def broadcast(message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    text = message.text.replace('/broadcast', '').strip()
+    if not text:
+        bot.reply_to(message, "❌ Tulis pesan setelah /broadcast\n\nContoh:\n/broadcast Halo Cornerpeeps! Ada update baru nih 💚")
+        return
+    
+    success = 0
+    failed = 0
+    for user_id in list(user_first_seen.keys()):
+        try:
+            bot.send_message(user_id, text, parse_mode="Markdown")
+            success += 1
+        except:
+            failed += 1
+    
+    bot.reply_to(message, f"✅ Broadcast selesai!\n\n📨 Terkirim: {success}\n❌ Gagal: {failed}")
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     global total_fess_sent
