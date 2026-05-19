@@ -7,12 +7,14 @@ from datetime import datetime, timedelta
 import random
 import re
 import time
-import sqlite3
 import hashlib
+import psycopg2
+import psycopg2.extras
 
 TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID", "-1002445709942"))
 ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not TOKEN:
     print("BOT_TOKEN tidak ada")
@@ -26,19 +28,18 @@ def home():
     return "Muncorner Bot is running 💚"
 
 # ─── DATABASE ─────────────────────────────────────────────
-DB_PATH = "/data/muncorner.db"
-
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(DATABASE_URL)
     return conn
 
+def get_cursor(conn):
+    return conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
 def init_db():
-    os.makedirs("/data", exist_ok=True)
     conn = get_db()
-    c = conn.cursor()
+    c = get_cursor(conn)
     c.execute('''CREATE TABLE IF NOT EXISTS users (
-        user_id INTEGER PRIMARY KEY,
+        user_id BIGINT PRIMARY KEY,
         lang TEXT DEFAULT 'id',
         first_seen TEXT,
         notif INTEGER DEFAULT 1,
@@ -57,15 +58,15 @@ def init_db():
         ever_registered INTEGER DEFAULT 0
     )''')
     c.execute('''CREATE TABLE IF NOT EXISTS last_messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        msg_id INTEGER,
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT,
+        msg_id BIGINT,
         preview TEXT,
         deadline TEXT
     )''')
     c.execute('''CREATE TABLE IF NOT EXISTS scheduled_fess (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT,
         type TEXT,
         text TEXT,
         file_id TEXT,
@@ -73,49 +74,49 @@ def init_db():
         send_time TEXT
     )''')
     c.execute('''CREATE TABLE IF NOT EXISTS broadcast_sent (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         text_hash TEXT,
-        user_id INTEGER,
+        user_id BIGINT,
         UNIQUE(text_hash, user_id)
     )''')
     c.execute('''CREATE TABLE IF NOT EXISTS valid_gifts (
-        msg_id INTEGER PRIMARY KEY
+        msg_id BIGINT PRIMARY KEY
     )''')
     c.execute('''CREATE TABLE IF NOT EXISTS global_stats (
         key TEXT PRIMARY KEY,
         value INTEGER DEFAULT 0
     )''')
-    c.execute("INSERT OR IGNORE INTO global_stats (key, value) VALUES ('total_fess_sent', 0)")
+    c.execute("INSERT INTO global_stats (key, value) VALUES ('total_fess_sent', 0) ON CONFLICT DO NOTHING")
     conn.commit()
     conn.close()
 
 def get_global_stat(key):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT value FROM global_stats WHERE key = ?", (key,))
+    c = get_cursor(conn)
+    c.execute("SELECT value FROM global_stats WHERE key = %s", (key,))
     row = c.fetchone()
     conn.close()
     return row["value"] if row else 0
 
 def increment_global_stat(key, amount=1):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("UPDATE global_stats SET value = value + ? WHERE key = ?", (amount, key))
+    c = get_cursor(conn)
+    c.execute("UPDATE global_stats SET value = value + %s WHERE key = %s", (amount, key))
     conn.commit()
     conn.close()
 
 def get_user(user_id):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
+    c = get_cursor(conn)
+    c.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
     row = c.fetchone()
     conn.close()
     return row
 
 def ensure_user(user_id):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("INSERT OR IGNORE INTO users (user_id, first_seen) VALUES (?, ?)",
+    c = get_cursor(conn)
+    c.execute("INSERT INTO users (user_id, first_seen) VALUES (%s, %s) ON CONFLICT DO NOTHING",
               (user_id, datetime.now().strftime("%d %b %Y")))
     conn.commit()
     conn.close()
@@ -124,71 +125,71 @@ def update_user(user_id, **kwargs):
     if not kwargs:
         return
     conn = get_db()
-    c = conn.cursor()
-    sets = ", ".join([f"{k} = ?" for k in kwargs])
+    c = get_cursor(conn)
+    sets = ", ".join([f"{k} = %s" for k in kwargs])
     vals = list(kwargs.values()) + [user_id]
-    c.execute(f"UPDATE users SET {sets} WHERE user_id = ?", vals)
+    c.execute(f"UPDATE users SET {sets} WHERE user_id = %s", vals)
     conn.commit()
     conn.close()
 
 def add_clover_db(user_id, amount):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("UPDATE users SET clover = clover + ? WHERE user_id = ?", (amount, user_id))
+    c = get_cursor(conn)
+    c.execute("UPDATE users SET clover = clover + %s WHERE user_id = %s", (amount, user_id))
     conn.commit()
     conn.close()
 
 def use_clover_db(user_id, amount):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT clover FROM users WHERE user_id = ?", (user_id,))
+    c = get_cursor(conn)
+    c.execute("SELECT clover FROM users WHERE user_id = %s", (user_id,))
     row = c.fetchone()
     if not row or row["clover"] < amount:
         conn.close()
         return False
-    c.execute("UPDATE users SET clover = clover - ? WHERE user_id = ?", (amount, user_id))
+    c.execute("UPDATE users SET clover = clover - %s WHERE user_id = %s", (amount, user_id))
     conn.commit()
     conn.close()
     return True
 
 def get_last_messages(user_id):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT * FROM last_messages WHERE user_id = ? ORDER BY id", (user_id,))
+    c = get_cursor(conn)
+    c.execute("SELECT * FROM last_messages WHERE user_id = %s ORDER BY id", (user_id,))
     rows = c.fetchall()
     conn.close()
     return [(r["msg_id"], r["preview"], datetime.fromisoformat(r["deadline"])) for r in rows]
 
 def add_last_message(user_id, msg_id, preview, deadline):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) as cnt FROM last_messages WHERE user_id = ?", (user_id,))
+    c = get_cursor(conn)
+    c.execute("SELECT COUNT(*) as cnt FROM last_messages WHERE user_id = %s", (user_id,))
     cnt = c.fetchone()["cnt"]
     if cnt >= 3:
-        c.execute("DELETE FROM last_messages WHERE id = (SELECT id FROM last_messages WHERE user_id = ? ORDER BY id LIMIT 1)", (user_id,))
-    c.execute("INSERT INTO last_messages (user_id, msg_id, preview, deadline) VALUES (?, ?, ?, ?)",
+        c.execute("DELETE FROM last_messages WHERE id = (SELECT id FROM last_messages WHERE user_id = %s ORDER BY id LIMIT 1)", (user_id,))
+    c.execute("INSERT INTO last_messages (user_id, msg_id, preview, deadline) VALUES (%s, %s, %s, %s)",
               (user_id, msg_id, preview, deadline.isoformat()))
     conn.commit()
     conn.close()
 
 def remove_last_message(user_id, msg_id):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("DELETE FROM last_messages WHERE user_id = ? AND msg_id = ?", (user_id, msg_id))
+    c = get_cursor(conn)
+    c.execute("DELETE FROM last_messages WHERE user_id = %s AND msg_id = %s", (user_id, msg_id))
     conn.commit()
     conn.close()
 
 def update_last_message_preview(user_id, msg_id, new_preview):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("UPDATE last_messages SET preview = ? WHERE user_id = ? AND msg_id = ?",
+    c = get_cursor(conn)
+    c.execute("UPDATE last_messages SET preview = %s WHERE user_id = %s AND msg_id = %s",
               (new_preview, user_id, msg_id))
     conn.commit()
     conn.close()
 
 def get_leaderboard():
     conn = get_db()
-    c = conn.cursor()
+    c = get_cursor(conn)
     c.execute("SELECT user_id, total_fess FROM users WHERE total_fess > 0 ORDER BY total_fess DESC")
     rows = c.fetchall()
     conn.close()
@@ -203,7 +204,7 @@ def get_rank(user_id):
 
 def get_all_user_ids():
     conn = get_db()
-    c = conn.cursor()
+    c = get_cursor(conn)
     c.execute("SELECT user_id FROM users")
     rows = c.fetchall()
     conn.close()
@@ -211,54 +212,54 @@ def get_all_user_ids():
 
 def is_broadcast_sent(text_hash, user_id):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT 1 FROM broadcast_sent WHERE text_hash = ? AND user_id = ?", (text_hash, user_id))
+    c = get_cursor(conn)
+    c.execute("SELECT 1 FROM broadcast_sent WHERE text_hash = %s AND user_id = %s", (text_hash, user_id))
     row = c.fetchone()
     conn.close()
     return row is not None
 
 def mark_broadcast_sent(text_hash, user_id):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("INSERT OR IGNORE INTO broadcast_sent (text_hash, user_id) VALUES (?, ?)", (text_hash, user_id))
+    c = get_cursor(conn)
+    c.execute("INSERT INTO broadcast_sent (text_hash, user_id) VALUES (%s, %s) ON CONFLICT DO NOTHING", (text_hash, user_id))
     conn.commit()
     conn.close()
 
 def add_valid_gift(msg_id):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("INSERT OR IGNORE INTO valid_gifts (msg_id) VALUES (?)", (msg_id,))
+    c = get_cursor(conn)
+    c.execute("INSERT INTO valid_gifts (msg_id) VALUES (%s) ON CONFLICT DO NOTHING", (msg_id,))
     conn.commit()
     conn.close()
 
 def is_valid_gift(msg_id):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT 1 FROM valid_gifts WHERE msg_id = ?", (msg_id,))
+    c = get_cursor(conn)
+    c.execute("SELECT 1 FROM valid_gifts WHERE msg_id = %s", (msg_id,))
     row = c.fetchone()
     conn.close()
     return row is not None
 
 def get_scheduled_fess_due():
     conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT * FROM scheduled_fess WHERE send_time <= ?", (datetime.now().isoformat(),))
+    c = get_cursor(conn)
+    c.execute("SELECT * FROM scheduled_fess WHERE send_time <= %s", (datetime.now().isoformat(),))
     rows = c.fetchall()
     conn.close()
     return rows
 
 def add_scheduled_fess(user_id, type_, text, file_id, caption, send_time):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("INSERT INTO scheduled_fess (user_id, type, text, file_id, caption, send_time) VALUES (?, ?, ?, ?, ?, ?)",
+    c = get_cursor(conn)
+    c.execute("INSERT INTO scheduled_fess (user_id, type, text, file_id, caption, send_time) VALUES (%s, %s, %s, %s, %s, %s)",
               (user_id, type_, text, file_id, caption, send_time.isoformat()))
     conn.commit()
     conn.close()
 
 def remove_scheduled_fess(fess_id):
     conn = get_db()
-    c = conn.cursor()
-    c.execute("DELETE FROM scheduled_fess WHERE id = ?", (fess_id,))
+    c = get_cursor(conn)
+    c.execute("DELETE FROM scheduled_fess WHERE id = %s", (fess_id,))
     conn.commit()
     conn.close()
 
@@ -668,7 +669,7 @@ def badge_benefit_markup(user_id):
     if level == 0:
         markup.add(types.InlineKeyboardButton(t(user_id, "btn_back"), callback_data="back_menu"))
         return markup
-    markup.add(types.InlineKeyboardButton("✏️ Edit Menfess" if lang == "id" else "✏️ Edit Menfess", callback_data="edit_fess"))
+    markup.add(types.InlineKeyboardButton("✏️ Edit Menfess", callback_data="edit_fess"))
     markup.add(types.InlineKeyboardButton("📊 Kirim Polling" if lang == "id" else "📊 Send Poll", callback_data="send_poll"))
     if level >= 2:
         markup.add(types.InlineKeyboardButton("⏰ Jadwal Menfess" if lang == "id" else "⏰ Schedule Menfess", callback_data="schedule_fess"))
@@ -935,10 +936,6 @@ def callback_handler(call):
                                       call.message.chat.id, call.message.message_id,
                                       parse_mode="Markdown", reply_markup=main_menu_markup(user_id))
 
-            with open("/data/log.txt", "a") as f:
-                uname = call.from_user.username or f"id:{user_id}"
-                f.write(f"{uname} ({user_id}): {preview}\n")
-
         except Exception as e:
             bot.edit_message_text(t(user_id, "send_error").format(e=e),
                                   call.message.chat.id, call.message.message_id,
@@ -1075,12 +1072,12 @@ def callback_handler(call):
 
     elif data == "confirm_del_account":
         conn = get_db()
-        c = conn.cursor()
-        c.execute("DELETE FROM last_messages WHERE user_id = ?", (user_id,))
+        c = get_cursor(conn)
+        c.execute("DELETE FROM last_messages WHERE user_id = %s", (user_id,))
         c.execute("""UPDATE users SET lang='id', notif=1, clover=0, streak=0,
                      last_checkin=NULL, total_fess=0, fess_count_date=NULL, fess_count=0,
                      peak_rank=NULL, peak_rank_date=NULL, peak_badge=0, peak_badge_date=NULL,
-                     prefix='💚', hide_badge=0 WHERE user_id = ?""", (user_id,))
+                     prefix='💚', hide_badge=0 WHERE user_id = %s""", (user_id,))
         conn.commit()
         conn.close()
         pending_users.discard(user_id)
@@ -1479,13 +1476,11 @@ def handle_message(message):
             types.InlineKeyboardButton(t(user_id, "btn_send_confirm"), callback_data="confirm_send"),
             types.InlineKeyboardButton(t(user_id, "btn_cancel"), callback_data="cancel_send")
         )
-        # Preview pakai HTML
         bot.send_message(user_id,
                          t(user_id, "invisible_preview").format(prefix=prefix, text=text),
                          parse_mode="HTML", reply_markup=markup)
         return
 
-    # ── Normal mode
     if message.content_type == 'text':
         text = message.text.strip()
         if len(text) > 4000:
@@ -1533,14 +1528,11 @@ def backup_worker():
         wait_seconds = (target - now).total_seconds()
         time.sleep(wait_seconds)
         try:
-            with open(DB_PATH, 'rb') as f:
-                today = datetime.now().strftime("%d-%m-%Y")
-                bot.send_document(
-                    ADMIN_ID,
-                    f,
-                    visible_file_name=f"muncorner_backup_{today}.db",
-                    caption=f"🗄 Backup Otomatis\n📅 {today}"
-                )
+            # Backup: kirim notif ke admin
+            bot.send_message(
+                ADMIN_ID,
+                f"🗄 Backup Otomatis\n📅 {datetime.now().strftime('%d-%m-%Y')}\n\n✅ Database tersimpan di Supabase"
+            )
         except Exception as e:
             print(f"Backup error: {e}")
 
